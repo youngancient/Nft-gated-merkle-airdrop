@@ -41,6 +41,7 @@ describe("NFTGated MerkleAirdrop", function () {
       nftAddress,
       merkleRoot
     );
+
     // send tokens to the contract
     const amount = ethers.parseUnits("100000", 18);
     airdropToken.transfer(nftGatedMerkleAirdrop, amount);
@@ -173,6 +174,9 @@ describe("NFTGated MerkleAirdrop", function () {
         "0x260ed15c9d2c2903514fc2a5d1213dbf80230d8a50d8ea5c599bd4832dd16637",
         "0x99c7f81c5ca76e03183cc146a5defdbf4a50b056766db98e8b7db26cda29859c",
       ];
+      const contractBalanceBeforeClaim =
+        await nftGatedMerkleAirdrop.getContractBalance();
+
       await expect(
         nftGatedMerkleAirdrop
           .connect(impersonatedNftHolder2)
@@ -180,13 +184,39 @@ describe("NFTGated MerkleAirdrop", function () {
       )
         .to.emit(nftGatedMerkleAirdrop, "AirdropClaimed")
         .withArgs(impersonatedNftHolder2, amount);
+
+      const totalAirdropClaimed =
+        await nftGatedMerkleAirdrop.getTotalAirdropClaimed();
+
+      expect(totalAirdropClaimed).to.equal(amount);
+      expect(await nftGatedMerkleAirdrop.getContractBalance()).to.equal(
+        contractBalanceBeforeClaim - totalAirdropClaimed
+      );
     });
 
-    it("Should not allow user claim airdrop twice", async function () {
-      const { nftGatedMerkleAirdrop, nftAddress, amount } = await loadFixture(
-        deployMerkleAirdrop
+    it("Should not allow a user claim airdrop twice", async function () {
+      const { nftGatedMerkleAirdrop, nftAddress, impersonatedNftHolder2 } =
+        await loadFixture(deployMerkleAirdrop);
+
+      const amount = ethers.parseUnits("320", 18);
+      const MerkleProof = [
+        "0x260ed15c9d2c2903514fc2a5d1213dbf80230d8a50d8ea5c599bd4832dd16637",
+        "0x99c7f81c5ca76e03183cc146a5defdbf4a50b056766db98e8b7db26cda29859c",
+      ];
+
+      //   we claim here
+      await nftGatedMerkleAirdrop
+        .connect(impersonatedNftHolder2)
+        .claimAirdrop(amount, MerkleProof);
+
+      await expect(
+        nftGatedMerkleAirdrop
+          .connect(impersonatedNftHolder2)
+          .claimAirdrop(amount, MerkleProof)
+      ).to.be.revertedWithCustomError(
+        nftGatedMerkleAirdrop,
+        "HasClaimedRewardsAlready"
       );
-      expect(await nftGatedMerkleAirdrop.getContractBalance()).to.equal(amount);
     });
   });
 });

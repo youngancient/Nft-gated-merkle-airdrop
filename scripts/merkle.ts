@@ -49,6 +49,7 @@ async function main() {
           [targetData.address, targetData.amount]
         )
       );
+
       const leafProof = tree.getHexProof(targetLeaf);
 
       console.log(leafProof);

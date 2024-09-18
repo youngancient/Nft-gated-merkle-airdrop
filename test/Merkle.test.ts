@@ -166,6 +166,20 @@ describe("NFTGated MerkleAirdrop", function () {
           .claimAirdrop(amount, invalidMerkleProof)
       ).to.be.revertedWithCustomError(nftGatedMerkleAirdrop, "InvalidClaim");
     });
+    it("Should revert if user has NFT and correct merkle proof, but invalid amount", async function () {
+      const { nftGatedMerkleAirdrop, airdropToken, impersonatedNftHolder2 } =
+        await loadFixture(deployMerkleAirdrop);
+      const invalidAmount = ethers.parseUnits("3200", 18);
+      const MerkleProof = [
+        "0x260ed15c9d2c2903514fc2a5d1213dbf80230d8a50d8ea5c599bd4832dd16637",
+        "0x99c7f81c5ca76e03183cc146a5defdbf4a50b056766db98e8b7db26cda29859c",
+      ];
+      await expect(
+        nftGatedMerkleAirdrop
+          .connect(impersonatedNftHolder2)
+          .claimAirdrop(invalidAmount, MerkleProof)
+      ).to.be.revertedWithCustomError(nftGatedMerkleAirdrop, "InvalidClaim");
+    });
     it("Should claim airdrop successfully", async function () {
       const { nftGatedMerkleAirdrop, nftAddress, impersonatedNftHolder2 } =
         await loadFixture(deployMerkleAirdrop);
@@ -280,7 +294,7 @@ describe("NFTGated MerkleAirdrop", function () {
       const newMerkleRoot =
         "0x67ed207195389edeb66a27fe868f6707ee23b6622ef478edf1c7d07552c9e2d8";
       await nftGatedMerkleAirdrop.updateMerkleRoot(newMerkleRoot);
-      
+
       expect(await nftGatedMerkleAirdrop.getMerkleRoot()).to.equal(
         newMerkleRoot
       );

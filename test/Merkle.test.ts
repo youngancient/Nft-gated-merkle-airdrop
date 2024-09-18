@@ -219,4 +219,71 @@ describe("NFTGated MerkleAirdrop", function () {
       );
     });
   });
+  describe("Only Owner Functions", function () {
+    it("Should revert if called by non-owner", async function () {
+      const { nftGatedMerkleAirdrop, owner, impersonatedNftHolder2 } =
+        await loadFixture(deployMerkleAirdrop);
+
+      const newMerkleRoot =
+        "0x67ed207195389edeb66a27fe868f6707ee23b6622ef478edf1c7d07552c9e2d8";
+
+      //  all functions here are OnlyOwner functions
+
+      await expect(
+        nftGatedMerkleAirdrop.connect(impersonatedNftHolder2).getMerkleRoot()
+      ).to.be.revertedWithCustomError(
+        nftGatedMerkleAirdrop,
+        "UnAuthorizedFunctionCall"
+      );
+
+      await expect(
+        nftGatedMerkleAirdrop
+          .connect(impersonatedNftHolder2)
+          .withdrawLeftOverToken()
+      ).to.be.revertedWithCustomError(
+        nftGatedMerkleAirdrop,
+        "UnAuthorizedFunctionCall"
+      );
+
+      await expect(
+        nftGatedMerkleAirdrop
+          .connect(impersonatedNftHolder2)
+          .getContractBalance()
+      ).to.be.revertedWithCustomError(
+        nftGatedMerkleAirdrop,
+        "UnAuthorizedFunctionCall"
+      );
+
+      await expect(
+        nftGatedMerkleAirdrop
+          .connect(impersonatedNftHolder2)
+          .getTotalAirdropClaimed()
+      ).to.be.revertedWithCustomError(
+        nftGatedMerkleAirdrop,
+        "UnAuthorizedFunctionCall"
+      );
+
+      await expect(
+        nftGatedMerkleAirdrop
+          .connect(impersonatedNftHolder2)
+          .updateMerkleRoot(newMerkleRoot)
+      ).to.be.revertedWithCustomError(
+        nftGatedMerkleAirdrop,
+        "UnAuthorizedFunctionCall"
+      );
+    });
+  });
+  describe("Update Merkle Root", function () {
+    it("Should claim airdrop successfully", async function () {
+      const { nftGatedMerkleAirdrop, nftAddress, impersonatedNftHolder2 } =
+        await loadFixture(deployMerkleAirdrop);
+      const newMerkleRoot =
+        "0x67ed207195389edeb66a27fe868f6707ee23b6622ef478edf1c7d07552c9e2d8";
+      await nftGatedMerkleAirdrop.updateMerkleRoot(newMerkleRoot);
+      
+      expect(await nftGatedMerkleAirdrop.getMerkleRoot()).to.equal(
+        newMerkleRoot
+      );
+    });
+  });
 });

@@ -45,7 +45,7 @@ describe("NFTGated MerkleAirdrop", function () {
     const amount = ethers.parseUnits("100000", 18);
     airdropToken.transfer(nftGatedMerkleAirdrop, amount);
 
-    const nftHolder1 = "0x440Bcc7a1CF465EAFaBaE301D1D7739cbFe09dDA";
+    const nftHolder1 = "0x720A4FaB08CB746fC90E88d1924a98104C0822Cf";
     await helpers.impersonateAccount(nftHolder1);
     const impersonatedNftHolder1 = await ethers.getSigner(nftHolder1);
 
@@ -126,25 +126,63 @@ describe("NFTGated MerkleAirdrop", function () {
         nftGatedMerkleAirdrop
           .connect(zeroSigner)
           .claimAirdrop(amount, merkleProof)
+      ).to.be.revertedWithCustomError(
+        nftGatedMerkleAirdrop,
+        "ZeroAddressDetected"
       );
     });
 
-    it("Should check if tokenAddress is correctly set", async function () {
-      const { nftGatedMerkleAirdrop, airdropToken } = await loadFixture(
-        deployMerkleAirdrop
-      );
+    it("Should revert if user does not have BoredApes NFT", async function () {
+      const { nftGatedMerkleAirdrop, airdropToken, account1 } =
+        await loadFixture(deployMerkleAirdrop);
+      const amount = ethers.parseUnits("50", 18);
+      const merkleProof = [
+        "0x31843176e3301e2dc71ed3f4946247899f496fc34c2b1468e63cb56f5a1ac967",
+        "0x83625161d1c1341e60abbc9d5be9ea5eb4f70c023e8c86c7253054c8ea0cc989",
+        "0x7f862e74df5ef9f009d8da2be82faf731b3624a0ae8c8e0253249c2089e0e028",
+        "0x59031210883d6c444ee66b516e8ba380e63adadfe67c71dc894e9e088aabb25a",
+      ];
 
-      expect(await nftGatedMerkleAirdrop.tokenAddress()).to.equal(airdropToken);
+      await expect(
+        nftGatedMerkleAirdrop
+          .connect(account1)
+          .claimAirdrop(amount, merkleProof)
+      ).to.be.revertedWithCustomError(nftGatedMerkleAirdrop, "NftNotFound");
+    });
+    it("Should revert if user has NFT but merkle proof is invalid", async function () {
+      const { nftGatedMerkleAirdrop, airdropToken, impersonatedNftHolder2 } =
+        await loadFixture(deployMerkleAirdrop);
+      const amount = ethers.parseUnits("50", 18);
+      const invalidMerkleProof = [
+        "0x31843176e3301e2dc71ed3f4946247899f496fc34c2b1468e63cb56f5a1ac967",
+        "0x83625161d1c1341e60abbc9d5be9ea5eb4f70c023e8c86c7253054c8ea0cc989",
+        "0x7f862e74df5ef9f009d8da2be82faf731b3624a0ae8c8e0253249c2089e0e028",
+        "0x59031210883d6c444ee66b516e8ba380e63adadfe67c71dc894e9e088aabb25a",
+      ];
+      await expect(
+        nftGatedMerkleAirdrop
+          .connect(impersonatedNftHolder2)
+          .claimAirdrop(amount, invalidMerkleProof)
+      ).to.be.revertedWithCustomError(nftGatedMerkleAirdrop, "InvalidClaim");
+    });
+    it("Should claim airdrop successfully", async function () {
+      const { nftGatedMerkleAirdrop, nftAddress, impersonatedNftHolder2 } =
+        await loadFixture(deployMerkleAirdrop);
+      const amount = ethers.parseUnits("320", 18);
+      const MerkleProof = [
+        "0x260ed15c9d2c2903514fc2a5d1213dbf80230d8a50d8ea5c599bd4832dd16637",
+        "0x99c7f81c5ca76e03183cc146a5defdbf4a50b056766db98e8b7db26cda29859c",
+      ];
+      await expect(
+        nftGatedMerkleAirdrop
+          .connect(impersonatedNftHolder2)
+          .claimAirdrop(amount, MerkleProof)
+      )
+        .to.emit(nftGatedMerkleAirdrop, "AirdropClaimed")
+        .withArgs(impersonatedNftHolder2, amount);
     });
 
-    it("Should check if NFTAddress is correctly set", async function () {
-      const { nftGatedMerkleAirdrop, nftAddress } = await loadFixture(
-        deployMerkleAirdrop
-      );
-
-      expect(await nftGatedMerkleAirdrop.nftAddress()).to.equal(nftAddress);
-    });
-    it("Should send test tokens to the contract", async function () {
+    it("Should not allow user claim airdrop twice", async function () {
       const { nftGatedMerkleAirdrop, nftAddress, amount } = await loadFixture(
         deployMerkleAirdrop
       );

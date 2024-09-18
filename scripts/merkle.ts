@@ -39,8 +39,8 @@ async function main() {
       // Example leaf to test proof
       // this leaf is invalid
       const targetData = {
-        address: "0x440Bcc7a1CF465EAFaBaE301D1D7739cbFe09dDA",
-        amount: "50000000000000000000",
+        address: "0xbB05F71952B30786d0aC7c7A8fA045724B8d2D69",
+        amount: "320000000000000000000",
       };
       console.log("User claim: " + targetData.address, targetData.amount);
       const targetLeaf = keccak256(

@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/IERC721.sol";
+
 // Uncomment this line to use console.log
 // import "hardhat/console.sol";
 
@@ -21,19 +22,24 @@ contract NFTGatedMerkleAirdrop {
     event WithdrawalSuccessful(address indexed _owner, uint256 indexed _amount);
 
     // @dev state variables
-    address owner;
-    address tokenAddress;
+    address public owner;
+    address public tokenAddress;
     bytes32 merkleRoot;
-    uint256 totalAmountSpent;
-    address nftAddress;
+    uint256 totalAidropClaimed;
+    address public nftAddress;
 
     // @dev mapping to track users that have claimed
     mapping(address => bool) claimedAirdropMap;
 
-    constructor(address _tokenAddress, address _nftAddress, bytes32 _merkleRoot) {
+    constructor(
+        address _tokenAddress,
+        address _nftAddress,
+        bytes32 _merkleRoot
+    ) {
         tokenAddress = _tokenAddress;
         nftAddress = _nftAddress;
         merkleRoot = _merkleRoot;
+        sanityCheck(msg.sender);
         owner = msg.sender;
     }
 
@@ -69,12 +75,15 @@ contract NFTGatedMerkleAirdrop {
         return IERC20(tokenAddress).balanceOf(address(this));
     }
 
-    function _getNftBalance(
-        address _user
-    ) private view returns (uint) {
+    function getTotalAirdropClaimed() public view returns (uint256) {
+        onlyOwner();
+        return totalAidropClaimed;
+    }
+
+    function _getNftBalance(address _user) private view returns (uint) {
         return IERC721(nftAddress).balanceOf(_user);
     }
-    
+
     // @user for claiming airdrop
     function claimAirdrop(
         uint256 _amount,
@@ -84,7 +93,7 @@ contract NFTGatedMerkleAirdrop {
         if (_hasClaimedAirdrop()) {
             revert HasClaimedRewardsAlready();
         }
-        if(_getNftBalance(msg.sender) < 1){
+        if (_getNftBalance(msg.sender) < 1) {
             revert NftNotFound();
         }
         // @dev we hash the encoded byte form of the user address and amount to create a leaf
@@ -96,7 +105,7 @@ contract NFTGatedMerkleAirdrop {
         }
 
         claimedAirdropMap[msg.sender] = true;
-        totalAmountSpent += _amount;
+        totalAidropClaimed += _amount;
 
         IERC20(tokenAddress).transfer(msg.sender, _amount);
 
@@ -111,8 +120,7 @@ contract NFTGatedMerkleAirdrop {
     }
 
     // @user get current merkle proof
-    function getMerkleProof() external view returns (bytes32) {
-        sanityCheck(msg.sender);
+    function getMerkleRoot() public view returns (bytes32) {
         onlyOwner();
         return merkleRoot;
     }
@@ -127,7 +135,7 @@ contract NFTGatedMerkleAirdrop {
         uint256 contractBalance = getContractBalance();
         zeroValueCheck(contractBalance);
 
-        if (totalAmountSpent <= contractBalance) {
+        if (totalAidropClaimed <= contractBalance) {
             revert UnclaimedTokensStillMuch();
         }
         /* if the totalAmountSpent is greater than the contract balance

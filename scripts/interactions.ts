@@ -9,7 +9,7 @@ async function main() {
   const merkleAirdropContractAddress =
     "0x55bBddDd171e681D528cc6d813DFceA63113646d";
   const merkleAirdrop = await ethers.getContractAt(
-    "MerkleAirdrop",
+    "NFTGatedMerkleAirdrop",
     merkleAirdropContractAddress
   );
 
@@ -39,7 +39,7 @@ async function main() {
   const merkleRoot =
     "0x29c08bc8bf7d3a0ed4b1dd16063389608cf9dec220f1584e32d317c2041e1fa4";
 
-  const contractMerkleRoot = await merkleAirdrop.getMerkleProof();
+  const contractMerkleRoot = await merkleAirdrop.getMerkleRoot();
   console.log(
     "Contract merkle proof is valid: ",
     contractMerkleRoot == merkleRoot

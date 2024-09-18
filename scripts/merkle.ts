@@ -58,7 +58,7 @@ async function main() {
 
       // this leaf is valid
       const targetData2 = {
-        address: "0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2",
+        address: "0xF22742F06e4F6d68A8d0B49b9F270bB56affAB38",
         amount: "130000000000000000000",
       };
       console.log("User claim: " + targetData2.address, targetData2.amount);
